@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Resident {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String // Di dunia nyata, ini harus di-hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports Report[] // Relasi ke Report
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  content     String
+  submittedAt DateTime @default(now())
+  resident    Resident @relation(fields: [residentId], references: [id])
+  residentId  String
+}
+
+model Alert {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+}

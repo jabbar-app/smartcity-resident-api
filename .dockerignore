@@ -1,0 +1,19 @@
+# Abaikan dependensi Node yang sudah di-install secara lokal
+node_modules
+services/*/node_modules
+
+# Abaikan file log
+*.log
+npm-debug.log*
+
+# Abaikan folder build TypeScript lokal
+dist
+services/*/dist
+
+# Abaikan file sistem operasi
+.DS_Store
+Thumbs.db
+
+# Abaikan konfigurasi editor/IDE
+.vscode
+.idea
