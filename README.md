@@ -47,8 +47,7 @@ curl -X POST -H "Content-Type: application/json" \
 
 A key feature of this project is its observability. Logs from all microservices are streamed to Loki and visualized in a Grafana dashboard, allowing for real-time monitoring and debugging.
 
-*placeholder for your Grafana dashboard screenshot*
-![Grafana Dashboard Screenshot](https://placehold.co/800x450/2d3748/FFFFFF?text=Your+Awesome+Grafana+Dashboard+Here&font=raleway)
+![Grafana Dashboard Screenshot](./grafana-screenshot.png)
 > Screenshot of the Grafana dashboard showing log volume and recent log entries from all services.
 
 ---

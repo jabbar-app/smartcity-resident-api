@@ -11,8 +11,9 @@ COPY prisma ./prisma
 # PENTING: Ganti 'resident' dengan 'report' atau 'alert' untuk Dockerfile lainnya.
 COPY services/resident/package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies MENGGUNAKAN FLAG BARU
+# Ini akan mengabaikan error konflik versi peer dependency
+RUN npm install --legacy-peer-deps
 
 # Generate Prisma Client
 RUN npx prisma generate
@@ -28,7 +29,5 @@ RUN npx tsc
 # Ganti port ini sesuai dengan layanannya (3001, 3002, atau 3003).
 EXPOSE 3001
 
-# PERINTAH BARU:
-# 1. Jalankan `prisma db push` untuk membuat/memperbarui tabel database.
-# 2. Setelah itu, jalankan server Node.js.
+# Perintah untuk menjalankan aplikasi
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]

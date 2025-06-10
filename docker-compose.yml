@@ -1,5 +1,63 @@
-version: '3.8'
 services:
+  # Layanan Resident
+  resident-api:
+    build:
+      context: .
+      dockerfile: ./services/resident/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Use default logging - Promtail will collect these
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=resident-api"
+
+  # Layanan Report
+  report-api:
+    build:
+      context: .
+      dockerfile: ./services/report/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=report-api"
+
+  # Layanan Alert
+  alert-api:
+    build:
+      context: .
+      dockerfile: ./services/alert/Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=alert-api"
+
+  # Database PostgreSQL dengan Healthcheck
   db:
     image: postgres:14-alpine
     environment:
@@ -15,62 +73,38 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  resident-api:
-    build:
-      context: .
-      dockerfile: ./services/resident/Dockerfile
-    ports:
-      - "3001:3001"
-    environment:
-      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
-    depends_on:
-      db:
-        condition: service_healthy
     logging:
-      driver: loki
+      driver: "json-file"
       options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=database"
 
-  report-api:
-    build:
-      context: .
-      dockerfile: ./services/report/Dockerfile
-    ports:
-      - "3002:3002"
-    environment:
-      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
-    depends_on:
-      db:
-        condition: service_healthy
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
-
-  alert-api:
-    build:
-      context: .
-      dockerfile: ./services/alert/Dockerfile
-    ports:
-      - "3003:3003"
-    environment:
-      DATABASE_URL: "postgresql://user:password@db:5432/smartcity?schema=public"
-    depends_on:
-      db:
-        condition: service_healthy
-    logging:
-      driver: loki
-      options:
-        loki-url: "http://loki:3100/loki/api/v1/push"
-
+  # --- Monitoring Stack ---
   loki:
     image: grafana/loki:2.9.0
     ports:
       - "3100:3100"
     volumes:
-      - ./loki/local-config.yaml:/etc/loki/local-config.yaml
-    command: -config.file=/etc/loki/local-config.yaml
+      - ./config/loki-config.yaml:/etc/loki/config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/config.yaml
+    user: "10001"
+
+  # Promtail to collect Docker logs
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - ./config/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
 
   grafana:
     image: grafana/grafana:latest
@@ -79,8 +113,18 @@ services:
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - grafana_data:/var/lib/grafana
     depends_on:
       - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=grafana"
 
 volumes:
   postgres_data:
+  loki_data:
+  grafana_data:
